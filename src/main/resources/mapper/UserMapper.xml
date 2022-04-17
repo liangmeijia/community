@@ -6,7 +6,10 @@
     <sql id="selectFields">
         id,username ,password,salt,email,type,status,activation_code,header_url,create_time
     </sql>
-    <select id="findUserById" resultType="user">
+    <sql id="insertFields">
+        username ,password,salt,email,type,status,activation_code,header_url,create_time
+    </sql>
+    <select id="selectById" resultType="user">
         select <include refid="selectFields"></include>
         from user where id=#{id};
     </select>
@@ -14,5 +17,23 @@
         select <include refid="selectFields"></include>
         from user;
     </select>
+    <select id="selectByUsername" resultType="user">
+        select <include refid="selectFields"></include>
+        from user where username=#{username}
+    </select>
+    <select id="selectByEmail" resultType="user">
+        select <include refid="selectFields"></include>
+        from user where email =#{email}
+    </select>
+    <insert id="insertUser" parameterType="user" keyProperty="id">
+        insert into user (<include refid="insertFields"></include>) values
+        (#{username},#{password},#{salt},#{email},#{type},#{status},#{activationCode},#{headerUrl},#{createTime})
+    </insert>
+    <delete id="deleteByUsername">
+        delete from user where username=#{username}
+    </delete>
+    <update id="updateStatusById">
+        update user set status=#{status} where id=#{id}
+    </update>
 
 </mapper>

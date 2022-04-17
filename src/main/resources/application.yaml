@@ -7,8 +7,9 @@ server:
   spring:
     thymeleaf:
       cache: false
-# DataSourceProperties
+
 spring:
+  # DataSourceProperties
   datasource:
     url:
       jdbc:mysql://localhost:3306/community?characterEncoding=utf-8&useSSL=false&serverTimezone=Hongkong
@@ -19,6 +20,18 @@ spring:
       minimum-idle: 5
       idle-timeout: 30000
     type: com.zaxxer.hikari.HikariDataSource
+  # MailProperties
+  mail:
+    host: smtp.sina.com
+    port: 465
+    username: lmj23333@sina.com
+    password: 10f46cbe987c4103
+    protocol: smtps
+    properties:
+      mail:
+        smtp:
+          ssl:
+            enable: true
 # MybatisProperties
 mybatis:
   mapper-locations: classpath:mapper/*.xml
@@ -30,3 +43,7 @@ mybatis:
 #logging.level.com.nowcoder.community=debug
 #logging.file=d:/work/data/nowcoder/community.log
 
+
+#
+community:
+  domain: http://127.0.0.1:8080

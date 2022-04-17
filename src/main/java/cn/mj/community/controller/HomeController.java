@@ -5,10 +5,13 @@ import cn.mj.community.pojo.Page;
 import cn.mj.community.pojo.User;
 import cn.mj.community.service.DiscussPostService;
 import cn.mj.community.service.UserService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,7 +26,8 @@ public class HomeController {
     @Autowired
     private UserService userService;
 
-    @RequestMapping("/index")
+
+    @RequestMapping(value = "/index",method = RequestMethod.GET)
     public String  index(Model model, Page page){
         int offset = page.getOffset();
         int limit = page.getLimit();

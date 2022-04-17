@@ -7,6 +7,11 @@ import java.util.List;
 
 @Mapper
 public interface UserMapper {
-    User findUserById(int id);
+    User selectById(int id);
     List<User> findAllUser();
+    User selectByUsername(String username);
+    User selectByEmail(String email);
+    int insertUser(User user);
+    int deleteByUsername(String username);
+    int updateStatusById(int id,int status);
 }
