@@ -46,4 +46,7 @@ mybatis:
 
 #
 community:
-  domain: http://127.0.0.1:8080
+  path:
+    domain: http://127.0.0.1:8080
+    upload: /home/lmj/java/uploadHeader
+

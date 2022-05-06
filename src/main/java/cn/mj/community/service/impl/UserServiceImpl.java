@@ -31,7 +31,7 @@ public class UserServiceImpl implements UserService {
     private MailClient mailClient;
     @Value("${server.servlet.context-path}")
     private String contextPath;
-    @Value("${community.domain}")
+    @Value("${community.path.domain}")
     private String domain;
 
 
@@ -140,5 +140,18 @@ public class UserServiceImpl implements UserService {
         loginTicketMapper.updateStatus(ticket,1);
     }
 
+    public LoginTicket findLoginTicketByTicket(String ticket){
+        return loginTicketMapper.selectLoginTicketByTicket(ticket);
+    }
+
+    @Override
+    public int updateHeaderUrlById(int id, String headerUrl) {
+        return userMapper.updateHeaderUrlById(id,headerUrl);
+    }
+
+    @Override
+    public int updatePassWordById(int id, String password) {
+        return userMapper.updatePassWordById(id,password);
+    }
 
 }
