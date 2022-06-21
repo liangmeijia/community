@@ -4,7 +4,9 @@ import cn.mj.community.pojo.DiscussPost;
 import cn.mj.community.pojo.Page;
 import cn.mj.community.pojo.User;
 import cn.mj.community.service.DiscussPostService;
+import cn.mj.community.service.LikeService;
 import cn.mj.community.service.UserService;
+import cn.mj.community.util.CommunityConst;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -19,13 +21,14 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-public class HomeController {
+public class HomeController implements CommunityConst {
 
     @Autowired
     private DiscussPostService discussPostService;
     @Autowired
     private UserService userService;
-
+    @Autowired
+    private LikeService likeService;
 
     @RequestMapping(value = "/index",method = RequestMethod.GET)
     public String  index(Model model, Page page){
@@ -38,6 +41,10 @@ public class HomeController {
         List<DiscussPost> list = discussPostService.selectDiscussPosts(0, offset, limit);
         for (DiscussPost discussPost : list) {
             Map<String,Object> map=new HashMap<>();
+            //get post likeCount
+            long postLikeCount = likeService.likeCount_entity(ENTITY_TYPE_POST, discussPost.getId());
+            map.put("postLikeCount", postLikeCount);
+            //
             map.put("discussPost",discussPost);
             User user = userService.findUserById(discussPost.getUserId());
             map.put("user",user);
@@ -45,6 +52,10 @@ public class HomeController {
         }
         model.addAttribute("discussPosts",discussPosts);
         return "index";
+    }
+    @RequestMapping(path = "/error",method = RequestMethod.GET)
+    public String getErrorPage(){
+        return "/error/500";
     }
 
 }

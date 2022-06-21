@@ -8,6 +8,7 @@ import java.util.Map;
 
 public interface UserService {
     User findUserById(int id);
+    User findUserByUserName(String userName);
     List<User> findAllUser();
     Map<String,Object> register (User user);
     Map<String ,Object> login(String username,String password,int expired);

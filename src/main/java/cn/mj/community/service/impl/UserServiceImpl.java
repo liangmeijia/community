@@ -12,19 +12,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class UserServiceImpl implements UserService {
     private Logger logger= LoggerFactory.getLogger(UserServiceImpl.class);
     @Autowired
     private UserMapper userMapper;
-    @Autowired
-    private LoginTicketMapper loginTicketMapper;
+//    @Autowired
+//    private LoginTicketMapper loginTicketMapper;
     @Autowired
     private TemplateEngine templateEngine;
     @Autowired
@@ -33,11 +35,23 @@ public class UserServiceImpl implements UserService {
     private String contextPath;
     @Value("${community.path.domain}")
     private String domain;
-
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @Override
     public User findUserById(int id) {
-        return userMapper.selectById(id);
+        // select user info in mysql -> select user info in redis
+//        return userMapper.selectById(id);
+        User user = findUserCache(id);
+        if(user == null){
+            user = initUserCache(id);
+        }
+        return user;
+    }
+
+    @Override
+    public User findUserByUserName(String userName) {
+        return userMapper.selectByUsername(userName);
     }
 
     @Override
@@ -123,7 +137,10 @@ public class UserServiceImpl implements UserService {
         loginTicket.setStatus(0);
         loginTicket.setExpired(new Date(System.currentTimeMillis()+expired));
         loginTicket.setUserId(u.getId());
-        loginTicketMapper.insert(loginTicket);
+        //save loginTicket in mysql -> save loginTicket in redis
+        //loginTicketMapper.insert(loginTicket);
+        String ticketKey = CommunityUtil.getTicketKey(loginTicket.getTicket());
+        redisTemplate.opsForValue().set(ticketKey,loginTicket);
         map.put("ticket",loginTicket.getTicket());
         return map;
 
@@ -132,26 +149,57 @@ public class UserServiceImpl implements UserService {
     @Override
     public int updateStatusById(int id, int status) {
         int re = userMapper.updateStatusById(id, status);
+        clearUserCache(id);
         return re;
     }
 
     @Override
     public void loginOut(String ticket) {
-        loginTicketMapper.updateStatus(ticket,1);
+//        loginTicketMapper.updateStatus(ticket,1);
+        String ticketKey = CommunityUtil.getTicketKey(ticket);
+        LoginTicket loginTicket = (LoginTicket) redisTemplate.opsForValue().get(ticketKey);
+        loginTicket.setStatus(1);
+        redisTemplate.opsForValue().set(ticketKey, loginTicket);
     }
 
     public LoginTicket findLoginTicketByTicket(String ticket){
-        return loginTicketMapper.selectLoginTicketByTicket(ticket);
+        //select ticket in mysql ->select ticket in redis
+//        return loginTicketMapper.selectLoginTicketByTicket(ticket);
+        String ticketKey = CommunityUtil.getTicketKey(ticket);
+        return (LoginTicket) redisTemplate.opsForValue().get(ticketKey);
     }
 
     @Override
     public int updateHeaderUrlById(int id, String headerUrl) {
-        return userMapper.updateHeaderUrlById(id,headerUrl);
+        int row = userMapper.updateHeaderUrlById(id, headerUrl);
+        clearUserCache(id);
+        return row;
     }
 
     @Override
     public int updatePassWordById(int id, String password) {
-        return userMapper.updatePassWordById(id,password);
+        int row = userMapper.updatePassWordById(id, password);
+        clearUserCache(id);
+        return row;
     }
 
+    //1.select user info in redis
+    //yes -> return
+    //no  -> save user info in redis
+    private User findUserCache(int userId){
+        String userKey = CommunityUtil.getUserKey(userId);
+        return (User) redisTemplate.opsForValue().get(userKey);
+    }
+    //2.save user info in redis
+    private User initUserCache(int userId){
+        User user = userMapper.selectById(userId);
+        String userKey = CommunityUtil.getUserKey(userId);
+        redisTemplate.opsForValue().set(userKey,user,60*60, TimeUnit.SECONDS);
+        return user;
+    }
+    //3.del user info in redis if updated the user info
+    private void clearUserCache(int userId){
+        String userKey = CommunityUtil.getUserKey(userId);
+        redisTemplate.delete(userKey);
+    }
 }

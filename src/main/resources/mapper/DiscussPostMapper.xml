@@ -7,6 +7,11 @@
     <sql id="selectFields" >
         id,user_id,title,content,type,status,create_time,comment_count,score
     </sql>
+
+    <sql id="insertFields" >
+        user_id,title,content,type,status,create_time,comment_count,score
+    </sql>
+
     <select id="selectDiscussPosts" resultType="discussPost">
         select <include refid="selectFields"></include>
         from discuss_post
@@ -23,4 +28,19 @@
         from discuss_post
         where status !=2;
     </select>
+
+    <insert id="insertDiscussPost" parameterType="cn.mj.community.pojo.DiscussPost">
+        insert into discuss_post (<include refid="insertFields"></include>) values
+        (#{userId},#{title},#{content},#{type},#{status},#{createTime},#{commentCount},#{score})
+    </insert>
+
+    <select id="selectDiscussPostById" resultType="cn.mj.community.pojo.DiscussPost">
+        select <include refid="selectFields"></include>
+        from discuss_post
+        where id = #{id}
+    </select>
+
+    <update id="updateCommentCounts">
+        update discuss_post set comment_count = #{commentCount} where id = #{id}
+    </update>
 </mapper>

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.util.Date;
 import java.util.List;
 
 @SpringBootTest
@@ -23,5 +24,13 @@ public class DiscussPostMapperTest {
         for(DiscussPost discussPost:discussPosts){
             log.debug("discussPost {}",discussPost.toString());
         }
+    }
+    @Test
+    public void test1(){
+        DiscussPost discussPost = new DiscussPost();
+        discussPost.setCreateTime(new Date());
+        discussPost.setTitle("hhh");
+        discussPost.setContent("hhhhhhhhhhhhh");
+        discussPostMapper.insertDiscussPost(discussPost);
     }
 }
