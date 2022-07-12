@@ -1,11 +1,10 @@
 package cn.mj.community.controller;
 
 import cn.mj.community.dao.DiscussPostMapper;
-import cn.mj.community.pojo.Comment;
-import cn.mj.community.pojo.DiscussPost;
-import cn.mj.community.pojo.Page;
-import cn.mj.community.pojo.User;
+import cn.mj.community.event.EventProducer;
+import cn.mj.community.pojo.*;
 import cn.mj.community.service.CommentService;
+import cn.mj.community.service.DiscussPostService;
 import cn.mj.community.service.LikeService;
 import cn.mj.community.service.UserService;
 import cn.mj.community.util.CommunityConst;
@@ -14,6 +13,7 @@ import cn.mj.community.util.HostHolder;
 import cn.mj.community.util.SensitiveFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,7 +30,7 @@ public class DiscussPostController implements CommunityConst {
     @Autowired
     private HostHolder hostHolder;
     @Autowired
-    private DiscussPostMapper discussPostMapper;
+    private DiscussPostService discussPostService;
     @Autowired
     private SensitiveFilter sensitiveFilter;
     @Autowired
@@ -39,6 +39,10 @@ public class DiscussPostController implements CommunityConst {
     private CommentService commentService;
     @Autowired
     private LikeService likeService;
+    @Autowired
+    private EventProducer eventProducer;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @RequestMapping(path = "/add",method= RequestMethod.POST)
     @ResponseBody
@@ -63,13 +67,26 @@ public class DiscussPostController implements CommunityConst {
         discussPost.setContent(sensitiveFilter.sensitiveWordsFilter(content));
         discussPost.setCreateTime(new Date());
         String json = CommunityUtil.getJsonString(0,"add discussPost successfully");
-        discussPostMapper.insertDiscussPost(discussPost);
+        discussPostService.addDiscussPost(discussPost);
+
+        //add kafka queue (insert discussPost in ES)
+        Event event = new Event()
+                .setTopic(KAFKA_TOPIC_PUBLISH)
+                .setUserId(user.getId())
+                .setEntityType(ENTITY_TYPE_POST)
+                .setEntityId(discussPost.getId());
+        eventProducer.fireEvent(event);
+
+        //add postId into redis
+        String redisKey = CommunityUtil.getPostScoreKey();
+        redisTemplate.opsForSet().add(redisKey, discussPost.getId());
+
         return json;
     }
 
     @RequestMapping(path = "/detail/{discussPostId}",method = RequestMethod.GET)
     public String getDiscussPost(@PathVariable("discussPostId") int discussPostId, Model model, Page page){
-        DiscussPost discussPost = discussPostMapper.selectDiscussPostById(discussPostId);
+        DiscussPost discussPost = discussPostService.findDiscussPostById(discussPostId);
         model.addAttribute("post",discussPost);
         //get user info
         User user = userService.findUserById(discussPost.getUserId());
@@ -137,5 +154,62 @@ public class DiscussPostController implements CommunityConst {
 
         model.addAttribute("comments",commentVoList);
         return "/site/discuss-detail";
+    }
+
+    @RequestMapping(path = "/top",method = RequestMethod.POST)
+    @ResponseBody
+    public String setTop(int discussPostId){
+        DiscussPost post = discussPostService.findDiscussPostById(discussPostId);
+        int type = post.getType()==0?1:0;
+        discussPostService.updateDiscussPostType(discussPostId,type);
+        //
+        Event event = new Event()
+                .setTopic(KAFKA_TOPIC_PUBLISH)
+                .setUserId(hostHolder.getUser().getId())
+                .setEntityType(ENTITY_TYPE_POST)
+                .setEntityId(discussPostId);
+        eventProducer.fireEvent(event);
+        //
+        Map<String,Object> map = new HashMap<>();
+        map.put("type",type);
+        return CommunityUtil.getJsonString(0,null,map);
+    }
+
+    @RequestMapping(path = "/wonderful",method = RequestMethod.POST)
+    @ResponseBody
+    public String setWonderful(int discussPostId){
+        DiscussPost post = discussPostService.findDiscussPostById(discussPostId);
+        int status = post.getStatus()==1?0:1;
+        discussPostService.updateDiscussPostStatus(discussPostId,status);
+        //
+        Event event = new Event()
+                .setTopic(KAFKA_TOPIC_PUBLISH)
+                .setUserId(hostHolder.getUser().getId())
+                .setEntityType(ENTITY_TYPE_POST)
+                .setEntityId(discussPostId);
+        eventProducer.fireEvent(event);
+
+        //add postId into redis
+        String redisKey = CommunityUtil.getPostScoreKey();
+        redisTemplate.opsForSet().add(redisKey, discussPostId);
+        //
+        Map<String,Object> map = new HashMap<>();
+        map.put("status",status);
+        return CommunityUtil.getJsonString(0,null,map);
+    }
+
+    @RequestMapping(path = "/del",method = RequestMethod.POST)
+    @ResponseBody
+    public String setDel(int discussPostId){
+        discussPostService.updateDiscussPostStatus(discussPostId,2);
+        //
+        Event event = new Event()
+                .setTopic(KAFKA_TOPIC_PUBLISH)
+                .setUserId(hostHolder.getUser().getId())
+                .setEntityType(ENTITY_TYPE_POST)
+                .setEntityId(discussPostId);
+        eventProducer.fireEvent(event);
+
+        return CommunityUtil.getJsonString(0);
     }
 }

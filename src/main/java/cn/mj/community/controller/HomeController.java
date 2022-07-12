@@ -14,6 +14,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,14 +32,15 @@ public class HomeController implements CommunityConst {
     private LikeService likeService;
 
     @RequestMapping(value = "/index",method = RequestMethod.GET)
-    public String  index(Model model, Page page){
+    public String  index(Model model, Page page,
+                         @RequestParam(name = "orderModel",defaultValue = "0") int orderModel){
         int offset = page.getOffset();
         int limit = page.getLimit();
-        page.setRows(discussPostService.selectDiscussPostRows());
-        page.setPath("/index");
+        page.setRows(discussPostService.findDiscussPostRows(0));
+        page.setPath("/index?orderModel="+orderModel);
 
         List<Map<String,Object>> discussPosts=new ArrayList<>();
-        List<DiscussPost> list = discussPostService.selectDiscussPosts(0, offset, limit);
+        List<DiscussPost> list = discussPostService.findDiscussPosts(0, offset, limit, orderModel);
         for (DiscussPost discussPost : list) {
             Map<String,Object> map=new HashMap<>();
             //get post likeCount
@@ -51,11 +53,18 @@ public class HomeController implements CommunityConst {
             discussPosts.add(map);
         }
         model.addAttribute("discussPosts",discussPosts);
+        model.addAttribute("orderModel",orderModel);
+
         return "index";
     }
     @RequestMapping(path = "/error",method = RequestMethod.GET)
     public String getErrorPage(){
         return "/error/500";
+    }
+
+    @RequestMapping(path = "/denied",method = RequestMethod.GET)
+    public String getDeniedPage(){
+        return "/error/404";
     }
 
 }

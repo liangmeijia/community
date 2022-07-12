@@ -9,6 +9,7 @@ import cn.mj.community.util.CommunityUtil;
 import cn.mj.community.util.HostHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +26,8 @@ public class LikeController implements CommunityConst {
     private HostHolder hostHolder;
     @Autowired
     private EventProducer eventProducer;
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     @RequestMapping(path = "/like", method = RequestMethod.POST)
     @ResponseBody
@@ -36,7 +39,7 @@ public class LikeController implements CommunityConst {
 
         int likeStatus = likeService.likeStatus(entityType, entityId, user.getId());
 
-        HashMap<String, String> map = new HashMap<>();
+        HashMap<String, Object> map = new HashMap<>();
         map.put("likeCount",String.valueOf(likeCount_entity));
         map.put("likeStatus",String.valueOf(likeStatus));
 
@@ -52,17 +55,26 @@ public class LikeController implements CommunityConst {
                     .setData("postId",postId);
             eventProducer.fireEvent(event);
         }
+
+        //add postId into redis
+        if(entityType == ENTITY_TYPE_POST){
+            //if the type of like entity id "post"
+            String redisKey = CommunityUtil.getPostScoreKey();
+            redisTemplate.opsForSet().add(redisKey, postId);
+        }
+
+
         return CommunityUtil.getJsonString(0,null, map);
 
     }
 
 
 
-    @RequestMapping(path = "/userCount", method = RequestMethod.GET)
-    @ResponseBody
-    public String getLikeCountForUser(int targetId){
-        long likeCount_user = likeService.likeCount_user(targetId);
-        return CommunityUtil.getJsonString(0, String.valueOf(likeCount_user));
-    }
+//    @RequestMapping(path = "/userCount", method = RequestMethod.GET)
+//    @ResponseBody
+//    public String getLikeCountForUser(int targetId){
+//        long likeCount_user = likeService.likeCount_user(targetId);
+//        return CommunityUtil.getJsonString(0, String.valueOf(likeCount_user));
+//    }
 
 }

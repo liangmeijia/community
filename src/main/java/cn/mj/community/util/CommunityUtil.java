@@ -9,6 +9,7 @@ import org.springframework.util.DigestUtils;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class CommunityUtil implements CommunityConst{
@@ -17,6 +18,7 @@ public class CommunityUtil implements CommunityConst{
     public static String getUUID(){
         return UUID.randomUUID().toString().replaceAll("-","");
     }
+
     //md5
     public static String md5(String str){
         if(StringUtils.isBlank(str)){
@@ -25,6 +27,7 @@ public class CommunityUtil implements CommunityConst{
         String md5 = DigestUtils.md5DigestAsHex(str.getBytes());
         return md5;
     }
+
     //get cookie from request
     public static String getCookieValue(HttpServletRequest request,String cookieName){
         if(request ==null || cookieName == null){
@@ -41,8 +44,9 @@ public class CommunityUtil implements CommunityConst{
 
         return null;
     }
+
     //product json string
-    public static String getJsonString(int code, String msg, HashMap<String,String> map){
+    public static String getJsonString(int code, String msg, Map<String,Object> map){
         JSONObject json =new JSONObject();
         json.put("code",code);
         if(!StringUtils.isBlank(msg)){
@@ -98,9 +102,31 @@ public class CommunityUtil implements CommunityConst{
         //ticket:ticket
         return REDIS_KEY_USERINFO_PRE+SPLIT+userId;
     }
+
+    public static String getPostScoreKey(){
+        //post:score -> set(postId1, postId2...)
+        return REDIS_KEY_POST_PRE+SPLIT+"score";
+    }
+
+    //daily UV
+    public static String getUVKey(String date){
+        return REDIS_KEY_UV +SPLIT+date;
+    }
+    //range UV
+    public static String getUVKey(String startDate, String endDate){
+        return REDIS_KEY_UV+SPLIT+startDate+SPLIT+endDate;
+    }
+    //daily DAU
+    public static String getDAUKey(String date){
+        return REDIS_KEY_DAU +SPLIT+date;
+    }
+    //range DAU
+    public static String getDAUKey(String startDate, String endDate){
+        return REDIS_KEY_DAU+SPLIT+startDate+SPLIT+endDate;
+    }
     //for test
     public static void main(String[] args) {
-        HashMap<String, String> map = new HashMap<>();
+        HashMap<String, Object> map = new HashMap<>();
         map.put("name","bob");
         map.put("age","22");
 

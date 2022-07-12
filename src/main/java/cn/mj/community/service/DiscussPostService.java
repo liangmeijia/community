@@ -6,13 +6,19 @@ import cn.mj.community.pojo.DiscussPost;
 import java.util.List;
 
 public interface DiscussPostService {
-    List<DiscussPost> selectDiscussPosts(int userId, int offset, int limit);
+    List<DiscussPost> findDiscussPosts(int userId, int offset, int limit, int orderModel);
 
-    int selectDiscussPostRows();
+    int findDiscussPostRows(int userId);
 
     int addDiscussPost(DiscussPost discussPost);
 
-    DiscussPost findDiscussPostById(int userid);
+    DiscussPost findDiscussPostById(int id);
 
     int updateCommentCounts(int id, int commentCount);
+
+    int updateDiscussPostScore(int id , double score);
+
+    int updateDiscussPostType(int id, int type);
+
+    int updateDiscussPostStatus(int id , int status);
 }

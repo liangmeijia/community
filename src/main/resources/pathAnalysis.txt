@@ -1,0 +1,20 @@
+controller:
+    user:
+        "/user/setting",
+        "/user/profile/**",
+        "/user/updatePassWord"
+    discussPost:
+        "/discussPost/add",
+        "/discussPost/detail/**",
+    comment:
+        "/comment/add/**"
+    follow:
+        "/follow",
+        "/findFollowees/**",
+        "/findFollowers/**"
+    like:
+        "/like"
+    login:
+        "/loginOut"
+    message:
+        "/message/**"

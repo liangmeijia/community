@@ -20,7 +20,7 @@ public class DiscussPostMapperTest {
         int rows = discussPostMapper.selectDiscussPostRows();
         log.debug("total rows {}",rows);//
 
-        List<DiscussPost> discussPosts = discussPostMapper.selectDiscussPosts(0, 1, 10);
+        List<DiscussPost> discussPosts = discussPostMapper.selectDiscussPosts(0, 1, 10,0);
         for(DiscussPost discussPost:discussPosts){
             log.debug("discussPost {}",discussPost.toString());
         }

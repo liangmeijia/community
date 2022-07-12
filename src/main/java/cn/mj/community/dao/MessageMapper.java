@@ -21,4 +21,17 @@ public interface MessageMapper {
     int insertMessage(Message message);
 
     int updateStatus(List<Integer> ids, int status);
+
+    //system notice
+    //select least notice in the topic
+    Message selectLeastNotice(String topic, int userId);
+
+    //select the count of notice (in the topic)
+    int selectNoticeCount(String topic, int userId);
+
+    //select the count of unread notice (in the topic)
+    int selectUnReadNoticeCount(String topic, int userId);
+
+    //select all notice list in the topic
+    List<Message> selectNotices(String topic, int userId, int offset, int limit);
 }

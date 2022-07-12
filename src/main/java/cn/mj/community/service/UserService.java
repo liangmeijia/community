@@ -2,7 +2,9 @@ package cn.mj.community.service;
 
 import cn.mj.community.pojo.LoginTicket;
 import cn.mj.community.pojo.User;
+import org.springframework.security.core.GrantedAuthority;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -17,4 +19,5 @@ public interface UserService {
     LoginTicket findLoginTicketByTicket(String ticket);
     int updateHeaderUrlById(int id, String headerUrl);
     int updatePassWordById(int id,String password);
+    Collection<? extends GrantedAuthority> getAuthorities(int userId);
 }

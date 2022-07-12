@@ -13,6 +13,7 @@ public interface CommunityConst {
     int ENTITY_TYPE_POST=1;
     int ENTITY_TYPE_COMMENT=2;
     int ENTITY_TYPE_USER=3;
+
     //redis key
     String REDIS_KEY_ENTITY_PRE = "like:entity";
     String REDIS_KEY_USER_PRE = "like:user";
@@ -21,11 +22,26 @@ public interface CommunityConst {
     String REDIS_KEY_KAPTCHA_PRE = "kaptcha";
     String REDIS_KEY_TICKET_PRE = "ticket";
     String REDIS_KEY_USERINFO_PRE = "user";
+    String REDIS_KEY_POST_PRE = "post";
+    String REDIS_KEY_UV = "uv";
+    String REDIS_KEY_DAU = "dau";
     String SPLIT = ":";
+
     //kafka topic
     String KAFKA_TOPIC_COMMENT ="comment";
     String KAFKA_TOPIC_LIKE = "like";
     String KAFKA_TOPIC_FOLLOW ="follow";
+    String KAFKA_TOPIC_PUBLISH ="publish";
+    String KAFKA_TOPIC_SHARE = "share";
+
     //system user id
     int SYSTEM_USER_ID = 1;
+
+    //auth:user
+    String AUTHORITY_USER = "user";
+    //auth:admin
+    String AUTHORITY_ADMIN = "admin";
+    //auth:moderator
+    String AUTHORITY_MODERATOR = "moderator";
+
 }

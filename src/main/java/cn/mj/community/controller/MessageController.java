@@ -5,9 +5,11 @@ import cn.mj.community.pojo.Page;
 import cn.mj.community.pojo.User;
 import cn.mj.community.service.MessageService;
 import cn.mj.community.service.UserService;
+import cn.mj.community.util.CommunityConst;
 import cn.mj.community.util.CommunityUtil;
 import cn.mj.community.util.HostHolder;
 import cn.mj.community.util.SensitiveFilter;
+import com.alibaba.fastjson.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,7 +23,7 @@ import java.util.*;
 
 @Controller
 @RequestMapping(path = "/message")
-public class MessageController {
+public class MessageController implements CommunityConst {
     @Autowired
     private MessageService messageService;
     @Autowired
@@ -53,6 +55,95 @@ public class MessageController {
 
         return ids;
     }
+    @RequestMapping(path = "/notice/detail/{topic}",method = RequestMethod.GET)
+    public String getNoticeDetail(@PathVariable("topic") String topic, Model model,Page page){
+        //
+        page.setLimit(5);
+        page.setPath("/message/notice/detail/"+topic);
+        page.setRows(messageService.findNoticeCount(topic,hostHolder.getUser().getId()));
+        //
+        List<Message> notices = messageService.findNotices(topic, hostHolder.getUser().getId(),page.getOffset(),page.getLimit());
+        List<Map<String,Object>> list = new ArrayList<>();
+        if(notices!=null){
+            for(Message notice :notices){
+                Map<String,Object> map = new HashMap<>();
+                map.put("notice",notice);
+                HashMap content = JSONObject.parseObject(notice.getContent(), HashMap.class);
+                map.put("user",userService.findUserById((Integer) content.get("userId")));
+                map.put("entityType",content.get("entityType"));
+                map.put("entityId",content.get("entityId"));
+                map.put("postId",content.get("postId"));
+                list.add(map);
+            }
+            model.addAttribute("notices",list);
+        }
+
+        model.addAttribute("systemUser",userService.findUserById(SYSTEM_USER_ID));
+        model.addAttribute("topic",topic);
+        // set letter read
+        List<Integer> ids = getIds(notices);
+        if (!ids.isEmpty()) messageService.updateStatus(ids,1);
+        return "/site/notice-detail";
+    }
+    @RequestMapping(path = "/notice/list",method = RequestMethod.GET)
+    public String getNoticeList(Model model){
+        User user = hostHolder.getUser();
+        //comment
+        Map<String,Object> map = new HashMap<>();
+        Message leastNotice = messageService.findLeastNotice(KAFKA_TOPIC_COMMENT, user.getId());
+        if(leastNotice!=null){
+            map.put("leastNotice",leastNotice);
+            HashMap content = JSONObject.parseObject(leastNotice.getContent(), HashMap.class);
+            map.put("entityType",content.get("entityType"));
+            map.put("entityId",content.get("entityId"));
+            map.put("user",userService.findUserById((Integer) content.get("userId")));
+            map.put("postId",content.get("postId"));
+        }
+        int noticeCount = messageService.findNoticeCount(KAFKA_TOPIC_COMMENT, user.getId());
+        int unReadNoticeCount = messageService.findUnReadNoticeCount(KAFKA_TOPIC_COMMENT, user.getId());
+        map.put("noticeCount",noticeCount);
+        map.put("unReadNoticeCount",unReadNoticeCount);
+        model.addAttribute("comment",map);
+
+        //like
+        map = new HashMap<>();
+        leastNotice = messageService.findLeastNotice(KAFKA_TOPIC_LIKE, user.getId());
+        if(leastNotice!=null){
+            map.put("leastNotice",leastNotice);
+            HashMap content = JSONObject.parseObject(leastNotice.getContent(), HashMap.class);
+            map.put("entityType",content.get("entityType"));
+            map.put("entityId",content.get("entityId"));
+            map.put("user",userService.findUserById((Integer) content.get("userId")));
+            map.put("postId",content.get("postId"));
+        }
+        noticeCount = messageService.findNoticeCount(KAFKA_TOPIC_LIKE, user.getId());
+        unReadNoticeCount = messageService.findUnReadNoticeCount(KAFKA_TOPIC_LIKE, user.getId());
+        map.put("noticeCount",noticeCount);
+        map.put("unReadNoticeCount",unReadNoticeCount);
+        model.addAttribute("like",map);
+
+        //follow
+        map = new HashMap<>();
+        leastNotice = messageService.findLeastNotice(KAFKA_TOPIC_FOLLOW, user.getId());
+        if(leastNotice!=null){
+            map.put("leastNotice",leastNotice);
+            HashMap content = JSONObject.parseObject(leastNotice.getContent(), HashMap.class);
+            map.put("entityType",content.get("entityType"));
+            map.put("entityId",content.get("entityId"));
+            map.put("user",userService.findUserById((Integer) content.get("userId")));
+        }
+        noticeCount = messageService.findNoticeCount(KAFKA_TOPIC_FOLLOW, user.getId());
+        unReadNoticeCount = messageService.findUnReadNoticeCount(KAFKA_TOPIC_FOLLOW, user.getId());
+        map.put("noticeCount",noticeCount);
+        map.put("unReadNoticeCount",unReadNoticeCount);
+        model.addAttribute("follow",map);
+
+        //
+        model.addAttribute("unreadConversationCount",messageService.findUnreadLetterCount(user.getId(), null));
+        model.addAttribute("unreadNoticeCount",messageService.findUnReadNoticeCount(null,user.getId()));
+
+        return "/site/notice";
+    }
     @RequestMapping(path = "/list",method = RequestMethod.GET)
     public String getMessageList(Model model, Page page){
         User user = hostHolder.getUser();
@@ -79,6 +170,8 @@ public class MessageController {
         }
         model.addAttribute("conversations",conversationsVo);
         model.addAttribute("unreadConversationCount",messageService.findUnreadLetterCount(user.getId(), null));
+        model.addAttribute("unreadNoticeCount",messageService.findUnReadNoticeCount(null,user.getId()));
+
         return "/site/letter";
     }
 
@@ -112,7 +205,7 @@ public class MessageController {
     @RequestMapping(path = "/letter/send", method = RequestMethod.POST)
     @ResponseBody
     public String sendLetter(String toName, String content){
-        Integer.valueOf("a");
+//        Integer.valueOf("a");
         //1.
         User target = userService.findUserByUserName(toName);
         if(target == null){

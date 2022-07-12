@@ -8,6 +8,8 @@ import cn.mj.community.service.UserService;
 import cn.mj.community.util.CommunityConst;
 import cn.mj.community.util.CommunityUtil;
 import cn.mj.community.util.HostHolder;
+import com.qiniu.util.Auth;
+import com.qiniu.util.StringMap;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +20,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.ServletOutputStream;
@@ -44,12 +47,48 @@ public class UserController implements CommunityConst {
     private LikeService likeService;
     @Autowired
     private FollowService followService;
+    @Value("${qiniu.key.access}")
+    private String accessKey;
+    @Value("${qiniu.key.secret}")
+    private String secretKey;
+    @Value("${qiniu.bucket.header.name}")
+    private String bucketHeaderName;
+    @Value("${qiniu.bucket.header.url}")
+    private String bucketHeaderUrl;
 
     @LoginRequiredAnnotation
     @RequestMapping(value = "/setting",method = RequestMethod.GET)
-    public String getSettingPage(){
+    public String getSettingPage(Model model){
+        //1.the filename of upload file
+        String filename = CommunityUtil.getUUID();
+
+        //2.set response info
+        StringMap policy = new StringMap();
+        policy.put("returnBody",CommunityUtil.getJsonString(0));
+
+        //3.create upload auth token
+        Auth auth = Auth.create(accessKey,secretKey);
+        String uploadToken = auth.uploadToken(bucketHeaderName, filename, 60 * 60, policy);
+
+        model.addAttribute("uploadToken",uploadToken);
+        model.addAttribute("filename",filename);
         return "/site/setting";
     }
+
+    @RequestMapping(path = "/header/url",method = RequestMethod.POST)
+    @ResponseBody
+    public String updateHeaderUrl(String filename){
+        if(StringUtils.isBlank(filename)){
+            logger.error("filename is null");
+            return CommunityUtil.getJsonString(1,"filename is null");
+        }
+        //
+        String url = bucketHeaderUrl+"/"+filename;
+        userService.updateHeaderUrlById(hostHolder.getUser().getId(), url);
+        return CommunityUtil.getJsonString(0);
+    }
+
+    //Deprecated
     @LoginRequiredAnnotation
     @RequestMapping("/uploadHeaderUrl")
     public String updateHeaderUrl(MultipartFile headerImg, Model model){
@@ -78,6 +117,7 @@ public class UserController implements CommunityConst {
         }
     }
 
+    //Deprecated
     @RequestMapping("/header/{url}")
     public void getHeaderImg(@PathVariable("url") String url, HttpServletResponse response){
         String location = uploadLocation+"/"+url;
@@ -123,6 +163,7 @@ public class UserController implements CommunityConst {
         model.addAttribute("followStatus",followStatus);
         return "/site/profile";
     }
+
     @LoginRequiredAnnotation
     @RequestMapping(value = "/updatePassWord",method = RequestMethod.POST)
     public String updatePassword(String oldPassWord, String newPassWord, String confirmPassWord, Model model){
@@ -147,7 +188,6 @@ public class UserController implements CommunityConst {
             model.addAttribute("oldPassWordError","oldPassWord is wrong");
             return "/site/setting";
         }
-        user.setSalt(CommunityUtil.getUUID().substring(0,5));
         userService.updatePassWordById(user.getId(),CommunityUtil.md5(newPassWord+user.getSalt()));
 
         return "redirect:/index";
